@@ -179,39 +179,21 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO)
     glm::mat4 model = trackballGetRotationMatrix(ctx.trackball);
     //glm::mat4 view = glm::mat4();
     glm::mat4 view = glm::lookAt(
-    glm::vec3(0,1,1), // position of the camera
-    glm::vec3(0,0,0), // and looks at origin
-    glm::vec3(0,1,0)  // normalized vector, how camera is oriented
+    glm::vec3(1.0f,0.2f,0.5f), // position of the camera
+    glm::vec3(0.0f), // and looks at origin
+    glm::vec3(0.0f,1.0f,0.0f)  // normalized vector, how camera is oriented
     );
-    glm::mat4 projection = glm::ortho(-ctx.aspect, ctx.aspect, -1.0f, 1.0f, -1.0f, 1.0f);
+    glm::mat4 projection = glm::ortho(-ctx.aspect, ctx.aspect, -1.0f, 1.0f, 0.01f, 100.0f);
     glm::mat4 mv = view * model;
     glm::mat4 mvp = projection * mv;
-    // ...
 
-    //defining lightsource position
-    glm::vec3 lightPosition(0,1,0);
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_light_position"), 1, &lightPosition[0]);
-
-    //light color
-    glm::vec3 lightColor(0.8,0.8,0.8);    
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_light_color"), 1, &lightColor[0]);
-
-    //ambient color
-    glm::vec3 ambientColor(0.5f, 0.6f, 0.8f);
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_ambient_color"), 1, &ambientColor[0]);
-
-    //diffuse color
-    glm::vec3 diffuseColor(0.8f, 0.5f, 0.7f);
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_diffuse_color"), 1, &diffuseColor[0]);
-    
-    //specular color
-    glm::vec3 specularColor(0.6f, 0.5f, 0.7f);
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_color"), 1, &specularColor[0]);
-
-    //specular power
-    glm::vec3 specularPower(0.8f, 0.5f, 0.4f);
-    glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_power"), 1, &specularPower[0]);
-
+    glm::vec3 lightPosition(0.1, 3.0, 5.0);
+    glm::vec3 lightColor(0.1, 0.8, 0.2);    
+    glm::vec3 ambientColor(0.02);
+    glm::vec3 diffuseColor(0.09, 0.7, 0.2);
+    glm::vec3 specularColor(0.04); 
+    const float specularPower = 60.0;
+ 
 
     // Activate program
     glUseProgram(program);
@@ -219,11 +201,17 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO)
     // Bind textures
     // ...
 
+
     // Pass uniforms
     glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE, &mv[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE, &mvp[0][0]);
-    glUniform1f(glGetUniformLocation(program, "u_time"), ctx.elapsed_time);
-    // ...
+    glUniform1f(glGetUniformLocation(program, "u_time"), ctx.elapsed_time);  
+    glUniform3fv(glGetUniformLocation(ctx.program, "u_light_position"), 1, &lightPosition[0]);
+    glUniform3fv(glGetUniformLocation(ctx.program, "u_light_color"), 1, &lightColor[0]);
+    glUniform3fv(glGetUniformLocation(ctx.program, "u_ambient_color"), 1, &ambientColor[0]);
+    glUniform3fv(glGetUniformLocation(ctx.program, "u_diffuse_color"), 1, &diffuseColor[0]);
+    glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_color"), 1, &specularColor[0]);
+    glUniform1f(glGetUniformLocation(ctx.program, "u_specular_power"), specularPower);
 
     // Draw!
     glBindVertexArray(meshVAO.vao);
