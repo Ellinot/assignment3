@@ -187,10 +187,10 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO)
     glm::mat4 mv = view * model;
     glm::mat4 mvp = projection * mv;
 
-    glm::vec3 lightPosition(0.1, 3.0, 5.0);
-    glm::vec3 lightColor(0.1, 0.8, 0.2);    
-    glm::vec3 ambientColor(0.02);
-    glm::vec3 diffuseColor(0.09, 0.7, 0.2);
+    glm::vec3 lightPosition(1.0, 1.0, 1.0);
+    glm::vec3 lightColor(1.0, 1.0, 1.0);    
+    glm::vec3 ambientColor(0.02, 0.0, 0.0);
+    glm::vec3 diffuseColor(0.4, 0.0, 0.0);
     glm::vec3 specularColor(0.04); 
     const float specularPower = 60.0;
  
