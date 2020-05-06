@@ -160,7 +160,7 @@ void init(Context &ctx) {
   createMeshVAO(ctx, ctx.mesh, &ctx.meshVAO);
 
   // Load cubemap texture(s)
-  // ...
+  ctx.cubemap = loadCubemap(cubemapDir() + "/Forrest/");
 
   initializeTrackball(ctx);
 }
@@ -189,12 +189,15 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   const float specularPower = 60.0;
 
   // Activate program
-  glUseProgram(program);
+  glUseProgram(ctx.program);
 
   // Bind textures
-  // ...
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 1);
 
   // Pass uniforms
+  glUniform1i(glGetUniformLocation(ctx.program, "u_cubemap"), 1);
+
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE,
                      &mv[0][0]);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE,
