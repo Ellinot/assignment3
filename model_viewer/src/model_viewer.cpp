@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <glm/gtc/type_ptr.hpp>
+
 // The attribute locations we will use in the vertex shader
 enum AttributeLocation { POSITION = 0, NORMAL = 1 };
 
@@ -41,12 +43,11 @@ struct MeshVAO {
   int numIndices;
 };
 
-float zoomFactor = 0.15;
 // Struct for resources and state
 struct Context {
   int width;
   int height;
-  float zoom = 0.f;
+
   float aspect;
   GLFWwindow *window;
   GLuint program;
@@ -56,6 +57,29 @@ struct Context {
   GLuint defaultVAO;
   GLuint cubemap;
   float elapsed_time;
+
+  // Rendering -- Assignment3
+  glm::vec4 lightColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  glm::vec3 lightPosition = glm::vec3{1.0, 1.0, 1.0};
+  bool enableLight = true;
+
+  // float ambientColor[3] = {0.02, 0.0, 0.0};
+  glm::vec3 ambientColor = glm::vec3(0.02, 0.0, 0.0);
+  bool enableAmbiant = true;
+  glm::vec3 diffuseColor = glm::vec3{0.4, 0.0, 0.0};
+  bool enableDiffuse = true;
+  glm::vec3 specularColor = glm::vec3(0.04, 0.04, 0.04);
+  bool enableSpecular = true;
+  float specularPower = 60.0;
+
+  glm::vec4 backgroudColor = glm::vec4(0.2, 0.2, 0.2, 1.0);
+
+  bool enablePerspective = false;
+  bool ortho = true;
+  float zoomFactorOrtho = 0.15;
+  float zoomFactorPerspective = 5.0f;
+  float zoom = 0.f;
+  float fov = 50.0f;
 };
 
 // Returns the value of an environment variable
@@ -175,18 +199,28 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
       glm::vec3(0.0f),             // and looks at origin
       glm::vec3(0.0f, 1.0f, 0.0f)  // normalized vector, how camera is oriented
       );
-  glm::mat4 projection =
-      glm::ortho(-ctx.aspect - ctx.zoom, ctx.aspect + ctx.zoom,
-                 -1.0f - ctx.zoom, 1.0f + ctx.zoom, 0.01f, 100.0f);
+
+  glm::mat4 projection;
+
+  if (!ctx.enablePerspective) {
+    projection = glm::ortho(-ctx.aspect - ctx.zoom, ctx.aspect + ctx.zoom,
+                            -1.0f - ctx.zoom, 1.0f + ctx.zoom, 0.01f, 100.0f);
+  } else {
+
+    if (ctx.ortho) {
+      ctx.ortho = false;
+      ctx.zoom = 0;
+      ctx.fov = 50.0f;
+    }
+
+    projection =
+
+        glm::perspective(glm::radians(ctx.fov),
+                         (float)ctx.width / (float)ctx.height, 0.1f, 100.0f);
+  }
+
   glm::mat4 mv = view * model;
   glm::mat4 mvp = projection * mv;
-
-  glm::vec3 lightPosition(1.0, 1.0, 1.0);
-  glm::vec3 lightColor(1.0, 1.0, 1.0);
-  glm::vec3 ambientColor(0.02, 0.0, 0.0);
-  glm::vec3 diffuseColor(0.4, 0.0, 0.0);
-  glm::vec3 specularColor(0.04);
-  const float specularPower = 60.0;
 
   // Activate program
   glUseProgram(ctx.program);
@@ -204,17 +238,18 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
                      &mvp[0][0]);
   glUniform1f(glGetUniformLocation(program, "u_time"), ctx.elapsed_time);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_light_position"), 1,
-               &lightPosition[0]);
+               &ctx.lightPosition[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_light_color"), 1,
-               &lightColor[0]);
+               ctx.enableLight ? &ctx.lightColor[0] : &glm::vec3(0.0f)[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_ambient_color"), 1,
-               &ambientColor[0]);
+               ctx.enableAmbiant ? &ctx.ambientColor[0] : &glm::vec3(0.0f)[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_diffuse_color"), 1,
-               &diffuseColor[0]);
+               ctx.enableDiffuse ? &ctx.diffuseColor[0] : &glm::vec3(0.0f)[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_color"), 1,
-               &specularColor[0]);
+               ctx.enableSpecular ? &ctx.specularColor[0]
+                                  : &glm::vec3(0.0f)[0]);
   glUniform1f(glGetUniformLocation(ctx.program, "u_specular_power"),
-              specularPower);
+              ctx.specularPower);
 
   // Draw!
   glBindVertexArray(meshVAO.vao);
@@ -223,7 +258,8 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
 }
 
 void display(Context &ctx) {
-  glClearColor(0.2, 0.2, 0.2, 1.0);
+  glClearColor(ctx.backgroudColor[0], ctx.backgroudColor[1],
+               ctx.backgroudColor[2], ctx.backgroudColor[3]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glEnable(GL_DEPTH_TEST); // ensures that polygons overlap correctly
@@ -321,8 +357,42 @@ void resizeCallback(GLFWwindow *window, int width, int height) {
 void scrollCallback(GLFWwindow *window, double x, double y) {
 
   Context *ctx = static_cast<Context *>(glfwGetWindowUserPointer(window));
-  ctx->zoom += zoomFactor * y;
-  std::cout << x << " " << y << std::endl;
+
+  if (ctx->enablePerspective) {
+
+    ctx->fov += (float)ctx->zoomFactorPerspective * y;
+
+  } else {
+    ctx->zoom += (float)ctx->zoomFactorOrtho * y;
+  }
+}
+
+void drawImGuiControls(Context &ctx) {
+
+  ImGui::Begin("Settings");
+
+  if (ImGui::CollapsingHeader("Material", true)) {
+    ImGui::ColorEdit3("Diffuse Light", &ctx.diffuseColor[0]);
+    ImGui::Checkbox("Diffuse Enabled", &ctx.enableDiffuse);
+    ImGui::ColorEdit3("Specular Light", &ctx.specularColor[0]);
+    ImGui::SliderFloat("Specular Power", &ctx.specularPower, 0.0f, 100.0f);
+    ImGui::Checkbox("Specular Enabled", &ctx.enableSpecular);
+  }
+
+  if (ImGui::CollapsingHeader("Lighting", true)) {
+    ImGui::ColorEdit3("Light Color", &ctx.lightColor[0]);
+    ImGui::SliderFloat3("Light Position", &ctx.lightPosition[0], 0.0f, 1.0f);
+    ImGui::Checkbox("Light Enabled", &ctx.enableLight);
+    ImGui::ColorEdit3("Ambiant Light", &ctx.ambientColor[0]);
+    ImGui::Checkbox("Ambiant Enabled", &ctx.enableAmbiant);
+  }
+
+  if (ImGui::CollapsingHeader("Background", true)) {
+    ImGui::ColorEdit3("Background Color : ", &ctx.backgroudColor[0]);
+    ImGui::Checkbox("Perspective Projection", &ctx.enablePerspective);
+  }
+
+  ImGui::End();
 }
 
 int main(void) {
@@ -335,8 +405,8 @@ int main(void) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  ctx.width = 500;
-  ctx.height = 500;
+  ctx.width = 600;
+  ctx.height = 800;
   ctx.aspect = float(ctx.width) / float(ctx.height);
   ctx.window =
       glfwCreateWindow(ctx.width, ctx.height, "Model viewer", nullptr, nullptr);
@@ -372,6 +442,7 @@ int main(void) {
     glfwPollEvents();
     ctx.elapsed_time = glfwGetTime();
     ImGui_ImplGlfwGL3_NewFrame();
+    drawImGuiControls(ctx);
     display(ctx);
     ImGui::Render();
     glfwSwapBuffers(ctx.window);
