@@ -13,8 +13,8 @@ uniform vec3 u_ambient_color;
 uniform vec3 u_diffuse_color;
 uniform vec3 u_specular_color;
 uniform float u_specular_power;
-uniform samplerCube u_cubemap;
 
+uniform samplerCube u_cubemap;
 
 //normalization after interpolation
 vec3 N_normalized = normalize(N);
@@ -27,7 +27,6 @@ void main()
 {
 
     float normalization = (8.0 + u_specular_power) / 8.0;
-    
     float lambertian = max(dot(L_normalized, N_normalized), 0.0);
     vec3 Ia = u_ambient_color;
     vec3 Id = u_diffuse_color * u_light_color * lambertian;
@@ -36,15 +35,13 @@ void main()
   
     vec3 output_color = Ia + Id + Is;
 
-    output_color.rgb = pow(output_color, vec3(1.0 / 2.2)); //applying gamma correction
-   
+    output_color.rgb = pow(output_color, vec3(1.0 / 2.2)); //gamma correction
     //frag_color = vec4(output_color, 1.0);
 
     vec3 color = texture(u_cubemap, R).rgb; //texture lookup
-
+    color.rgb = pow(color, vec3(1.0 / 2.2)); //gamma correction
     frag_color = vec4(color, 1.0);
-   
-    
+
 
     //vec3 N = normalize(v_normal);
     //frag_color = vec4(0.5 * N + 0.5, 1.0);

@@ -185,6 +185,10 @@ void init(Context &ctx) {
 
   // Load cubemap texture(s)
   ctx.cubemap = loadCubemap(cubemapDir() + "/Forrest/");
+  //ctx.cubemap = loadCubemap(cubemapDir() + "/LarnacaCastle/");
+  //ctx.cubemap = loadCubemap(cubemapDir() + "/LarnacaCastle2/");
+  //ctx.cubemap = loadCubemap(cubemapDir() + "/reference/");
+  //ctx.cubemap = loadCubemap(cubemapDir() + "/RomeChurch/");
 
   initializeTrackball(ctx);
 }
@@ -226,8 +230,9 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   glUseProgram(ctx.program);
 
   // Bind textures
+  GLuint texture1 = 1;
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, 1);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture1);
 
   // Pass uniforms
   glUniform1i(glGetUniformLocation(ctx.program, "u_cubemap"), 1);
