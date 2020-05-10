@@ -185,10 +185,6 @@ void init(Context &ctx) {
 
   // Load cubemap texture(s)
   ctx.cubemap = loadCubemap(cubemapDir() + "/Forrest/");
-  //ctx.cubemap = loadCubemap(cubemapDir() + "/LarnacaCastle/");
-  //ctx.cubemap = loadCubemap(cubemapDir() + "/LarnacaCastle2/");
-  //ctx.cubemap = loadCubemap(cubemapDir() + "/reference/");
-  //ctx.cubemap = loadCubemap(cubemapDir() + "/RomeChurch/");
 
   initializeTrackball(ctx);
 }
