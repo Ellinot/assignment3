@@ -55,7 +55,12 @@ struct Context {
   Mesh mesh;
   MeshVAO meshVAO;
   GLuint defaultVAO;
-  GLuint cubemap;
+  //GLuint cubemap;
+  
+  std::vector<int> textures;
+  bool enableTexture = true;
+  //int textureId;
+  
   float elapsed_time;
 
   // Rendering -- Assignment3
@@ -71,6 +76,7 @@ struct Context {
   glm::vec3 specularColor = glm::vec3(0.04, 0.04, 0.04);
   bool enableSpecular = true;
   float specularPower = 60.0;
+  
 
   glm::vec4 backgroudColor = glm::vec4(0.2, 0.2, 0.2, 1.0);
 
@@ -184,7 +190,25 @@ void init(Context &ctx) {
   createMeshVAO(ctx, ctx.mesh, &ctx.meshVAO);
 
   // Load cubemap texture(s)
-  ctx.cubemap = loadCubemap(cubemapDir() + "/Forrest/");
+  int id0 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/0.125");
+  int id1 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/0.5");
+  int id2 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/2");
+  int id3 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/8");
+  int id4 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/32");
+  int id5 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/128");
+  int id6 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/512");
+  int id7 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/2048");
+  
+  ctx.textures.push_back(id0);
+  ctx.textures.push_back(id1);
+  ctx.textures.push_back(id2);
+  ctx.textures.push_back(id3);
+  ctx.textures.push_back(id4);
+  ctx.textures.push_back(id5);
+  ctx.textures.push_back(id6);
+  ctx.textures.push_back(id7);
+
+
 
   initializeTrackball(ctx);
 }
@@ -226,12 +250,13 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   glUseProgram(ctx.program);
 
   // Bind textures
-  GLuint texture1 = 1;
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, texture1);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.textures[0]);
+  //glBindTexture(GL_TEXTURE_CUBE_MAP, texture2);
 
   // Pass uniforms
-  glUniform1i(glGetUniformLocation(ctx.program, "u_cubemap"), 1);
+  glUniform3iv(glGetUniformLocation(ctx.program, "u_cubemap"), 1, 
+              &ctx.textures[0]);
 
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE,
                      &mv[0][0]);
@@ -378,6 +403,13 @@ void drawImGuiControls(Context &ctx) {
     ImGui::ColorEdit3("Specular Light", &ctx.specularColor[0]);
     ImGui::SliderFloat("Specular Power", &ctx.specularPower, 0.0f, 100.0f);
     ImGui::Checkbox("Specular Enabled", &ctx.enableSpecular);
+    //for(int &i : ctx.textures) {
+    //ImGui::SliderInt("Cubemap Texture", &i, 0.0f, 100.0f);
+    //}
+    
+    ImGui::SliderInt("Cubemap Texture", &ctx.textures, 0.0f, 100.0f);
+    //ImGui::Checkbox("Texture enabled", &ctx.enableTexture);
+
   }
 
   if (ImGui::CollapsingHeader("Lighting", true)) {
