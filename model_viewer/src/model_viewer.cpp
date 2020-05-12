@@ -58,8 +58,8 @@ struct Context {
   //GLuint cubemap;
   
   std::vector<int> textures;
+  int textureId = 0;
   bool enableTexture = true;
-  //int textureId;
   
   float elapsed_time;
 
@@ -250,14 +250,12 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   glUseProgram(ctx.program);
 
   // Bind textures
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.textures[0]);
-  //glBindTexture(GL_TEXTURE_CUBE_MAP, texture2);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.textures[ctx.textureId]);
 
   // Pass uniforms
   glUniform3iv(glGetUniformLocation(ctx.program, "u_cubemap"), 1, 
-              &ctx.textures[0]);
-
+            ctx.enableTexture ? &ctx.textures[ctx.textureId] : NULL);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE,
                      &mv[0][0]);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE,
@@ -272,8 +270,7 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   glUniform3fv(glGetUniformLocation(ctx.program, "u_diffuse_color"), 1,
                ctx.enableDiffuse ? &ctx.diffuseColor[0] : &glm::vec3(0.0f)[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_color"), 1,
-               ctx.enableSpecular ? &ctx.specularColor[0]
-                                  : &glm::vec3(0.0f)[0]);
+               ctx.enableSpecular ? &ctx.specularColor[0] : &glm::vec3(0.0f)[0]);
   glUniform1f(glGetUniformLocation(ctx.program, "u_specular_power"),
               ctx.specularPower);
 
@@ -403,12 +400,8 @@ void drawImGuiControls(Context &ctx) {
     ImGui::ColorEdit3("Specular Light", &ctx.specularColor[0]);
     ImGui::SliderFloat("Specular Power", &ctx.specularPower, 0.0f, 100.0f);
     ImGui::Checkbox("Specular Enabled", &ctx.enableSpecular);
-    //for(int &i : ctx.textures) {
-    //ImGui::SliderInt("Cubemap Texture", &i, 0.0f, 100.0f);
-    //}
-    
-    ImGui::SliderInt("Cubemap Texture", &ctx.textures, 0.0f, 100.0f);
-    //ImGui::Checkbox("Texture enabled", &ctx.enableTexture);
+    ImGui::SliderInt("Cubemap Texture", &ctx.textureId, 0, 7);
+    ImGui::Checkbox("Texture enabled", &ctx.enableTexture);
 
   }
 
