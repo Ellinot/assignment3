@@ -7,12 +7,14 @@ in vec3 L;
 in vec3 H;
 in vec3 V;
 
+
 out vec4 frag_color;
 uniform vec3 u_light_color;
 uniform vec3 u_ambient_color;
 uniform vec3 u_diffuse_color;
 uniform vec3 u_specular_color;
 uniform float u_specular_power;
+uniform bool u_enable_texture;
 
 uniform samplerCube u_cubemap;
 
@@ -32,17 +34,17 @@ void main()
     vec3 Id = u_diffuse_color * u_light_color * lambertian;
     vec3 Is = u_specular_color * u_light_color
              *  normalization * pow(max(0.0,dot(N_normalized, H_normalized)), u_specular_power);
-  
     vec3 output_color = Ia + Id + Is;
-
+    
+    if(u_enable_texture) {
+        vec3 color = texture(u_cubemap, R).rgb; //texture lookup
+        color.rgb = pow(color, vec3(1.0 / 2.2)); //gamma correction
+        frag_color = vec4(color, 1.0);
+    }
+    else {
     output_color.rgb = pow(output_color, vec3(1.0 / 2.2)); //gamma correction
-    //frag_color = vec4(output_color, 1.0);
-
-    vec3 color = texture(u_cubemap, R).rgb; //texture lookup
-    color.rgb = pow(color, vec3(1.0 / 2.2)); //gamma correction
-    frag_color = vec4(color, 1.0);
-
-
+    frag_color = vec4(output_color, 1.0);
+    }
     //vec3 N = normalize(v_normal);
     //frag_color = vec4(0.5 * N + 0.5, 1.0);
 }

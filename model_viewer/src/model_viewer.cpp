@@ -208,8 +208,6 @@ void init(Context &ctx) {
   ctx.textures.push_back(id6);
   ctx.textures.push_back(id7);
 
-
-
   initializeTrackball(ctx);
 }
 
@@ -255,7 +253,8 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
 
   // Pass uniforms
   glUniform3iv(glGetUniformLocation(ctx.program, "u_cubemap"), 1, 
-            ctx.enableTexture ? &ctx.textures[ctx.textureId] : NULL);
+            ctx.enableTexture ? &ctx.textures[ctx.textureId] : &ctx.textures[NULL]);
+  glUniform1i(glGetUniformLocation(ctx.program, "u_enable_texture"), ctx.enableTexture);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE,
                      &mv[0][0]);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE,
