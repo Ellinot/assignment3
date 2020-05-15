@@ -51,14 +51,20 @@ struct Context {
   float aspect;
   GLFWwindow *window;
   GLuint program;
+  GLuint shaderProgram;
   Trackball trackball;
   Mesh mesh;
   MeshVAO meshVAO;
-  GLuint defaultVAO;
   //GLuint cubemap;
+  GLuint skyboxProgram;
+  GLuint skyboxVAO;
+  GLuint skyboxVBO;
+  GLuint defaultVAO;
+  Mesh skybox;
   
   std::vector<int> textures;
   int textureId = 0;
+  GLuint skyboxTex;
   bool enableTexture = true;
   
   float elapsed_time;
@@ -185,31 +191,34 @@ void initializeTrackball(Context &ctx) {
 void init(Context &ctx) {
   ctx.program =
       loadShaderProgram(shaderDir() + "mesh.vert", shaderDir() + "mesh.frag");
-
+  ctx.skyboxProgram =
+      loadShaderProgram(shaderDir() + "skybox.vert", shaderDir() + "skybox.frag");
   loadMesh((modelDir() + "gargo.obj"), &ctx.mesh);
+  loadMesh((modelDir() + "icosphere.obj"), &ctx.skybox);
   createMeshVAO(ctx, ctx.mesh, &ctx.meshVAO);
+  createMeshVAO(ctx, ctx.skybox, &ctx.skyboxVAO);
 
   // Load cubemap texture(s)
-  int id0 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/0.125");
-  int id1 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/0.5");
-  int id2 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/2");
-  int id3 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/8");
-  int id4 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/32");
-  int id5 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/128");
-  int id6 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/512");
-  int id7 = loadCubemap(cubemapDir() + "/Forrest/prefiltered/2048");
+  ctx.skyboxTex = loadCubemap(cubemapDir() + "/Forrest");
   
-  ctx.textures.push_back(id0);
-  ctx.textures.push_back(id1);
-  ctx.textures.push_back(id2);
-  ctx.textures.push_back(id3);
-  ctx.textures.push_back(id4);
-  ctx.textures.push_back(id5);
-  ctx.textures.push_back(id6);
-  ctx.textures.push_back(id7);
 
   initializeTrackball(ctx);
 }
+
+
+void drawSkybox(Context &ctx, GLuint program, const MeshVAO &skyboxVAO) {
+  
+unsigned int skyboxVAO, skyboxVBO;
+glGenVertexArrays(1, &skyboxVAO);
+glGenBuffers(1, &skyboxVBO);
+glBindVertexArray(skyboxVAO);
+glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+glEnableVertexAttribArray(0);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); 
+
+}
+
 
 // MODIFY THIS FUNCTION
 void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
@@ -246,6 +255,7 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
 
   // Activate program
   glUseProgram(ctx.program);
+  glUseProgram(ctx.skyboxProgram);
 
   // Bind textures
   glActiveTexture(GL_TEXTURE0);
@@ -292,6 +302,8 @@ void reloadShaders(Context *ctx) {
   glDeleteProgram(ctx->program);
   ctx->program =
       loadShaderProgram(shaderDir() + "mesh.vert", shaderDir() + "mesh.frag");
+  ctx.skyboxProgram =
+      loadShaderProgram(shaderDir() + "skybox.vert", shaderDir() + "skybox.frag");
 }
 
 void mouseButtonPressed(Context *ctx, int button, int x, int y) {
@@ -316,6 +328,28 @@ void moveTrackball(Context *ctx, int x, int y) {
 void errorCallback(int /*error*/, const char *description) {
   std::cerr << description << std::endl;
 }
+
+
+
+    // Generates and populates a vertex buffer object (VBO) for the
+    // vertices (DO NOT CHANGE THIS)
+    glGenBuffers(1, &ctx.skyboxVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Creates a vertex array object (VAO) for drawing the cube
+    // (DO NOT CHANGE THIS)
+    glGenVertexArrays(1, &ctx.skyboxVAO);
+    glBindVertexArray(ctx.skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
+    glEnableVertexAttribArray(POSITION);
+    glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glBindVertexArray(ctx.defaultVAO); // unbinds the VAO
+
+}
+
+
+
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mods) {

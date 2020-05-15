@@ -25,6 +25,8 @@ vec3 H_normalized = normalize(H);
 
 vec3 R = reflect(-V, N);
 
+//vec3 R = I -2(N*I)*N; //Incidence vector??
+
 void main()
 {
 
