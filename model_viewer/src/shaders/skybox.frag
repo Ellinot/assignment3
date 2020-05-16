@@ -1,13 +1,13 @@
 // Skybox fragment shader
 #version 150
 
-in vec2 v_normal;
+in vec3 TexCoords;
 
-out vec4 frag_color;
+out vec4 FragColor;
 
 uniform samplerCube skybox;
 
 void main()
 {
-    frag_color = texture(skybox, v_normal);
+    FragColor = texture(skybox, TexCoords);
 }

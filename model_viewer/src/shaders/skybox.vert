@@ -4,14 +4,15 @@
 
 layout(location = 0) in vec3 a_position;
 
-out vec3 v_normal; //texcoords?
+out vec3 TexCoords;
 
-uniform mat4 u_mvp; 
-uniform mat4 u_mv;
+uniform mat4 u_p; 
+uniform mat4 u_v;
 
 void main()
 {
-    vec4 pos = u_mvp * u_mv * vec4(a_position, 1.0f);
-    gl_Position = pos.xyz;
-    v_normal = a_position;
+    TexCoords = a_position;
+    vec4 pos = u_p * u_v * vec4(a_position, 1.0f);
+    gl_Position = pos.xyww;
+    
 }

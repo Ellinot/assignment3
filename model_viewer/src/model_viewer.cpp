@@ -55,18 +55,21 @@ struct Context {
   Trackball trackball;
   Mesh mesh;
   MeshVAO meshVAO;
-  //GLuint cubemap;
+  // GLuint cubemap;
   GLuint skyboxProgram;
   GLuint skyboxVAO;
   GLuint skyboxVBO;
   GLuint defaultVAO;
   Mesh skybox;
-  
+
+  glm::mat4 view;
+  glm::mat4 projection;
+
   std::vector<int> textures;
   int textureId = 0;
-  GLuint skyboxTex;
+  GLuint skyboxTexture;
   bool enableTexture = true;
-  
+
   float elapsed_time;
 
   // Rendering -- Assignment3
@@ -82,9 +85,8 @@ struct Context {
   glm::vec3 specularColor = glm::vec3(0.04, 0.04, 0.04);
   bool enableSpecular = true;
   float specularPower = 60.0;
-  
 
-  glm::vec4 backgroudColor = glm::vec4(0.2, 0.2, 0.2, 1.0);
+  glm::vec4 backgroundColor = glm::vec4(0.2, 0.2, 0.2, 1.0);
 
   bool enablePerspective = false;
   bool ortho = true;
@@ -138,6 +140,11 @@ void loadMesh(const std::string &filename, Mesh *mesh) {
   OBJMesh obj_mesh;
   objMeshLoad(obj_mesh, filename);
   mesh->vertices = obj_mesh.vertices;
+
+  /* for (uint i = 0; i < mesh->vertices.size() * 0.20; ++i) {
+     std::cout << mesh->vertices[i].x << ", " << mesh->vertices[i].y << ", "
+               << mesh->vertices[i].z << std::endl;
+   }*/
   mesh->normals = obj_mesh.normals;
   mesh->indices = obj_mesh.indices;
 }
@@ -188,54 +195,87 @@ void initializeTrackball(Context &ctx) {
   ctx.trackball.center = center;
 }
 
+void createSkybox(Context &ctx) {
+
+  float skyboxVertices[] = {
+      // positions
+      -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+      1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
+
+      -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
+      -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+
+      1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
+
+      -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+
+      -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
+
+      -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+      1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
+
+  glGenVertexArrays(1, &ctx.skyboxVAO);
+  glGenBuffers(1, &ctx.skyboxVBO);
+  glBindVertexArray(ctx.skyboxVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices,
+               GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+}
+
 void init(Context &ctx) {
   ctx.program =
       loadShaderProgram(shaderDir() + "mesh.vert", shaderDir() + "mesh.frag");
-  ctx.skyboxProgram =
-      loadShaderProgram(shaderDir() + "skybox.vert", shaderDir() + "skybox.frag");
+  ctx.skyboxProgram = loadShaderProgram(shaderDir() + "skybox.vert",
+                                        shaderDir() + "skybox.frag");
   loadMesh((modelDir() + "gargo.obj"), &ctx.mesh);
-  loadMesh((modelDir() + "icosphere.obj"), &ctx.skybox);
+  // loadMesh((modelDir() + "icosphere.obj"), &ctx.skybox);
   createMeshVAO(ctx, ctx.mesh, &ctx.meshVAO);
-  createMeshVAO(ctx, ctx.skybox, &ctx.skyboxVAO);
+  createSkybox(ctx);
 
   // Load cubemap texture(s)
-  ctx.skyboxTex = loadCubemap(cubemapDir() + "/Forrest");
-  
+  ctx.skyboxTexture = loadCubemap(cubemapDir() + "/Forrest");
 
   initializeTrackball(ctx);
 }
 
+void drawSkybox(Context &ctx) {
 
-void drawSkybox(Context &ctx, GLuint program, const MeshVAO &skyboxVAO) {
-  
-unsigned int skyboxVAO, skyboxVBO;
-glGenVertexArrays(1, &skyboxVAO);
-glGenBuffers(1, &skyboxVBO);
-glBindVertexArray(skyboxVAO);
-glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-glEnableVertexAttribArray(0);
-glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); 
+  glUseProgram(ctx.skyboxProgram);
 
+  glm::mat4 view = glm::mat4(ctx.view);
+  glUniformMatrix4fv(glGetUniformLocation(ctx.skyboxProgram, "u_v"), 1,
+                     GL_FALSE, &view[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(ctx.skyboxProgram, "u_p"), 1,
+                     GL_FALSE, &ctx.projection[0][0]);
+  // skybox cube
+  glBindVertexArray(ctx.skyboxVAO);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.skyboxTexture);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glBindVertexArray(0);
+  glDepthFunc(GL_LESS);
 }
-
 
 // MODIFY THIS FUNCTION
 void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   // Define uniforms
   glm::mat4 model = trackballGetRotationMatrix(ctx.trackball);
   // glm::mat4 view = glm::mat4();
-  glm::mat4 view = glm::lookAt(
-      glm::vec3(1.0f, 0.2f, 0.5f), // position of the camera
+  ctx.view = glm::lookAt(
+      glm::vec3(0.0f, 0.0f, 0.7f), // position of the camera
       glm::vec3(0.0f),             // and looks at origin
       glm::vec3(0.0f, 1.0f, 0.0f)  // normalized vector, how camera is oriented
       );
 
-  glm::mat4 projection;
-
   if (!ctx.enablePerspective) {
-    projection = glm::ortho(-ctx.aspect - ctx.zoom, ctx.aspect + ctx.zoom,
-                            -1.0f - ctx.zoom, 1.0f + ctx.zoom, 0.01f, 100.0f);
+    ctx.projection =
+        glm::ortho(-ctx.aspect - ctx.zoom, ctx.aspect + ctx.zoom,
+                   -1.0f - ctx.zoom, 1.0f + ctx.zoom, 0.01f, 100.0f);
   } else {
 
     if (ctx.ortho) {
@@ -244,27 +284,23 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
       ctx.fov = 50.0f;
     }
 
-    projection =
+    ctx.projection =
 
         glm::perspective(glm::radians(ctx.fov),
                          (float)ctx.width / (float)ctx.height, 0.1f, 100.0f);
   }
 
-  glm::mat4 mv = view * model;
-  glm::mat4 mvp = projection * mv;
+  glm::mat4 mv = ctx.view * model;
+  glm::mat4 mvp = ctx.projection * mv;
 
   // Activate program
   glUseProgram(ctx.program);
-  glUseProgram(ctx.skyboxProgram);
-
-  // Bind textures
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.textures[ctx.textureId]);
 
   // Pass uniforms
-  glUniform3iv(glGetUniformLocation(ctx.program, "u_cubemap"), 1, 
-            ctx.enableTexture ? &ctx.textures[ctx.textureId] : &ctx.textures[NULL]);
-  glUniform1i(glGetUniformLocation(ctx.program, "u_enable_texture"), ctx.enableTexture);
+  /*glUniform3iv(glGetUniformLocation(ctx.program, "u_cubemap"), 1,
+               ctx.enableTexture ? &ctx.textures[ctx.textureId]
+                                 : &ctx.textures[NULL]);*/
+
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mv"), 1, GL_FALSE,
                      &mv[0][0]);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE,
@@ -279,31 +315,37 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
   glUniform3fv(glGetUniformLocation(ctx.program, "u_diffuse_color"), 1,
                ctx.enableDiffuse ? &ctx.diffuseColor[0] : &glm::vec3(0.0f)[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_specular_color"), 1,
-               ctx.enableSpecular ? &ctx.specularColor[0] : &glm::vec3(0.0f)[0]);
+               ctx.enableSpecular ? &ctx.specularColor[0]
+                                  : &glm::vec3(0.0f)[0]);
   glUniform1f(glGetUniformLocation(ctx.program, "u_specular_power"),
               ctx.specularPower);
 
   // Draw!
   glBindVertexArray(meshVAO.vao);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.skyboxTexture);
   glDrawElements(GL_TRIANGLES, meshVAO.numIndices, GL_UNSIGNED_INT, 0);
   glBindVertexArray(ctx.defaultVAO);
+
+  glDepthFunc(GL_LEQUAL);
 }
 
 void display(Context &ctx) {
-  glClearColor(ctx.backgroudColor[0], ctx.backgroudColor[1],
-               ctx.backgroudColor[2], ctx.backgroudColor[3]);
+  glClearColor(ctx.backgroundColor[0], ctx.backgroundColor[1],
+               ctx.backgroundColor[2], ctx.backgroundColor[3]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glEnable(GL_DEPTH_TEST); // ensures that polygons overlap correctly
   drawMesh(ctx, ctx.program, ctx.meshVAO);
+  drawSkybox(ctx);
 }
 
 void reloadShaders(Context *ctx) {
   glDeleteProgram(ctx->program);
   ctx->program =
       loadShaderProgram(shaderDir() + "mesh.vert", shaderDir() + "mesh.frag");
-  ctx.skyboxProgram =
-      loadShaderProgram(shaderDir() + "skybox.vert", shaderDir() + "skybox.frag");
+  ctx->skyboxProgram = loadShaderProgram(shaderDir() + "skybox.vert",
+                                         shaderDir() + "skybox.frag");
 }
 
 void mouseButtonPressed(Context *ctx, int button, int x, int y) {
@@ -329,27 +371,20 @@ void errorCallback(int /*error*/, const char *description) {
   std::cerr << description << std::endl;
 }
 
+// Generates and populates a vertex buffer object (VBO) for the
+// vertices (DO NOT CHANGE THIS)
+//    glGenBuffers(1, &ctx.skyboxVBO);
+//    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-
-    // Generates and populates a vertex buffer object (VBO) for the
-    // vertices (DO NOT CHANGE THIS)
-    glGenBuffers(1, &ctx.skyboxVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Creates a vertex array object (VAO) for drawing the cube
-    // (DO NOT CHANGE THIS)
-    glGenVertexArrays(1, &ctx.skyboxVAO);
-    glBindVertexArray(ctx.skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
-    glEnableVertexAttribArray(POSITION);
-    glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    glBindVertexArray(ctx.defaultVAO); // unbinds the VAO
-
-}
-
-
-
+//    // Creates a vertex array object (VAO) for drawing the cube
+//    // (DO NOT CHANGE THIS)
+//    glGenVertexArrays(1, &ctx.skyboxVAO);
+//    glBindVertexArray(ctx.skyboxVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, ctx.skyboxVBO);
+//    glEnableVertexAttribArray(POSITION);
+//    glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+//    glBindVertexArray(ctx.defaultVAO); // unbinds the VAO
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mods) {
@@ -435,7 +470,6 @@ void drawImGuiControls(Context &ctx) {
     ImGui::Checkbox("Specular Enabled", &ctx.enableSpecular);
     ImGui::SliderInt("Cubemap Texture", &ctx.textureId, 0, 7);
     ImGui::Checkbox("Texture enabled", &ctx.enableTexture);
-
   }
 
   if (ImGui::CollapsingHeader("Lighting", true)) {
@@ -447,7 +481,7 @@ void drawImGuiControls(Context &ctx) {
   }
 
   if (ImGui::CollapsingHeader("Background", true)) {
-    ImGui::ColorEdit3("Background Color : ", &ctx.backgroudColor[0]);
+    ImGui::ColorEdit3("Background Color : ", &ctx.backgroundColor[0]);
     ImGui::Checkbox("Perspective Projection", &ctx.enablePerspective);
   }
 
