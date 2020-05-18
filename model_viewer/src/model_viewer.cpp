@@ -259,7 +259,6 @@ void drawMesh(Context &ctx, GLuint program, const MeshVAO &meshVAO) {
                      &mv[0][0]);
   glUniformMatrix4fv(glGetUniformLocation(program, "u_mvp"), 1, GL_FALSE,
                      &mvp[0][0]);
-  glUniform1f(glGetUniformLocation(program, "u_time"), ctx.elapsed_time);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_light_position"), 1,
                &ctx.lightPosition[0]);
   glUniform3fv(glGetUniformLocation(ctx.program, "u_light_color"), 1,

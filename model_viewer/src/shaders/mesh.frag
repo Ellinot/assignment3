@@ -2,10 +2,10 @@
 #version 150
 
 in vec3 v_normal;
-in vec3 N;
-in vec3 L;
-in vec3 H;
-in vec3 V;
+in vec3 N; //view space normal
+in vec3 L; //view space light direction
+in vec3 H; //half way vector
+in vec3 V; //view space
 
 
 out vec4 frag_color;
